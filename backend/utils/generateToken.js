@@ -6,10 +6,12 @@ const generateToken = (id, res) => {
   });
 
   res.cookie("token", token, {
-    maxAge: 15 * 24 * 60 * 60 * 1000,
+    maxAge: 15 * 24 * 60 * 60 * 1000, // 15 days
     httpOnly: true,
     sameSite: "strict",
   });
+
+  return token; // <== return token so controller can send it in JSON
 };
 
 export default generateToken;

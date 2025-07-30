@@ -6,8 +6,7 @@ import bcrypt from "bcrypt";
 import cloudinary from "cloudinary";
 
 export const registerUser = async (req, res) => {
- const { name, email, password, gender } = req.body;
-
+  const { name, email, password, gender } = req.body;
   const file = req.file;
 
   if (!name || !email || !password || !gender || !file) {
@@ -18,13 +17,13 @@ export const registerUser = async (req, res) => {
 
   let user = await User.findOne({ email });
 
-  if (user)
+  if (user) {
     return res.status(400).json({
       message: "User Already Exist",
     });
+  }
 
   const fileUrl = getDataUrl(file);
-
   const hashPassword = await bcrypt.hash(password, 10);
 
   const myCloud = await cloudinary.v2.uploader.upload(fileUrl.content);
@@ -40,11 +39,11 @@ export const registerUser = async (req, res) => {
     },
   });
 
-  generateToken(user._id, res);
-
+  const token = generateToken(user._id, res); // store token
   res.status(201).json({
     message: "User Registered",
     user,
+    token, // <-- include token in response
   });
 };
 
@@ -53,23 +52,25 @@ export const loginUser = TryCatch(async (req, res) => {
 
   const user = await User.findOne({ email });
 
-  if (!user)
+  if (!user) {
     return res.status(400).json({
       message: "Invalid Credentials",
     });
+  }
 
   const comparePassword = await bcrypt.compare(password, user.password);
 
-  if (!comparePassword)
+  if (!comparePassword) {
     return res.status(400).json({
       message: "Invalid Credentials",
     });
+  }
 
-  generateToken(user._id, res);
-
+  const token = generateToken(user._id, res); // store token
   res.json({
     message: "User Logged in",
     user,
+    token, // <-- include token in response
   });
 });
 

@@ -10,13 +10,24 @@ const postSchema = new mongoose.Schema({
 
   type: {
     type: String,
-    required: true,
+    required: true,           // “post”, “reel” or “popular”
   },
 
   owner: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",
   },
+
+  // ─── NEW FIELDS ────────────────────────────────────────
+  anonymousOrder: {
+    type: Number,
+    default: null,            // will hold 1,2,3… for “popular” posts
+  },
+  tokensAwarded: {
+    type: Number,
+    default: 0,               // counts likes given on a “popular” post
+  },
+  // ────────────────────────────────────────────────────────
 
   createdAt: {
     type: Date,

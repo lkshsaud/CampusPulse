@@ -1,15 +1,16 @@
 import express from "express";
 import { isAuth } from "../middlewares/isAuth.js";
-import { 
-  myProfile, 
+import uploadFile from "../middlewares/multer.js";
+
+import {
+  myProfile,
   userProfile,
-  followandUnfollowUser, 
+  followandUnfollowUser,
   userFollowerandFollowingData,
   updateProfile,
   updatePassword,
-
+  getWeeklyLeaderboard,     // ← import new controller
 } from "../controllers/userControllers.js";
-import uploadFile from "../middlewares/multer.js";
 
 const router = express.Router();
 
@@ -19,5 +20,8 @@ router.post("/follow/:id", isAuth, followandUnfollowUser);
 router.get("/followdata/:id", isAuth, userFollowerandFollowingData);
 router.put("/:id", isAuth, uploadFile, updateProfile);
 router.post("/:id", isAuth, updatePassword);
+
+// — NEW: weekly leaderboard endpoint —
+router.get("/leaderboard/weekly", isAuth, getWeeklyLeaderboard);
 
 export default router;
