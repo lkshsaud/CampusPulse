@@ -1,7 +1,6 @@
 import { Post } from "../models/postModel.js";
 import { User } from "../models/userModel.js";
 
-// 1) Create anonymous post
 export const createPopular = async (req, res) => {
   try {
     const count = await Post.countDocuments({ type: "popular" });
@@ -19,7 +18,6 @@ export const createPopular = async (req, res) => {
   }
 };
 
-// 2) Get all popular posts
 export const getPopular = async (req, res) => {
   try {
     const posts = await Post.find({ type: "popular" })
@@ -32,7 +30,6 @@ export const getPopular = async (req, res) => {
   }
 };
 
-// 3) Toggle Like/Unlike a popular post
 export const likePopular = async (req, res) => {
   try {
     const post = await Post.findById(req.params.id);
@@ -42,20 +39,16 @@ export const likePopular = async (req, res) => {
     const hasLiked = post.likes.map(id => id.toString()).includes(userId);
 
     if (hasLiked) {
-      // Unlike
       post.likes = post.likes.filter(id => id.toString() !== userId);
       post.tokensAwarded = Math.max(0, post.tokensAwarded - 1);
       await post.save();
 
-      // decrement owner's total tokens
       await User.findByIdAndUpdate(post.owner, { $inc: { tokens: -1 } });
     } else {
-      // Like
       post.likes.push(req.user._id);
       post.tokensAwarded += 1;
       await post.save();
 
-      // increment owner's total tokens
       await User.findByIdAndUpdate(post.owner, { $inc: { tokens: 1 } });
     }
 
@@ -66,7 +59,6 @@ export const likePopular = async (req, res) => {
   }
 };
 
-// 4) Comment on popular post (unchanged)
 export const commentPopular = async (req, res) => {
   try {
     const { comment } = req.body;

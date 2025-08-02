@@ -7,8 +7,9 @@ import { isAuth } from "./middlewares/isAuth.js";
 import { Chat } from "./models/ChatModel.js";
 import { User } from "./models/userModel.js";
 import { app, server } from "./socket/socket.js";
-//import path from "path";
+import path from "path";
 import axios from "axios";
+import reportRoutes from "./routes/reportRoutes.js";
 
 const url = `http://localhost:7000`;
 const interval = 30000;
@@ -42,7 +43,8 @@ cloudinary.v2.config({
 //using middlewares
 app.use(express.json());
 app.use(cookieParser());
-
+app.use("/uploads", express.static(path.resolve("uploads")));
+app.use("/api/reports", reportRoutes);
 const port = process.env.PORT;
 
 app.get("/",(req,res)=>{

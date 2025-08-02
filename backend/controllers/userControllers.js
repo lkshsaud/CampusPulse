@@ -1,3 +1,5 @@
+// src/controllers/userControllers.js
+
 import TryCatch from "../utils/Trycatch.js";
 import { User } from "../models/userModel.js";
 import { Post } from "../models/postModel.js";
@@ -95,43 +97,27 @@ export const updatePassword = TryCatch(async (req, res) => {
   res.json({ message: "Password Updated" });
 });
 
-// ─── 7) Get 7‑day rolling leaderboard ───────────────────────────────
+// ─── 7) Weekly Leaderboard (sort all users by their current tokens) ─────────────────
 export const getWeeklyLeaderboard = TryCatch(async (req, res) => {
-  // 1. Date 7 days ago
-  const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+  // 1) Fetch top 10 users by tokens
+  const topUsers = await User.find()
+    .sort({ tokens: -1 })
+    .limit(10)
+    .select("name tokens profilePic");
 
-  // 2. Aggregate popular posts in last week by owner
-  const leaderboard = await Post.aggregate([
-    { $match: { type: "popular", createdAt: { $gte: weekAgo } } },
-    { $group: { _id: "$owner", tokens: { $sum: "$tokensAwarded" } } },
-    { $sort: { tokens: -1 } },
-    { $limit: 10 },
-    {
-      $lookup: {
-        from: "users",
-        localField: "_id",
-        foreignField: "_id",
-        as: "userInfo"
-      }
-    },
-    { $unwind: "$userInfo" },
-    {
-      $project: {
-        _id: 0,
-        userId: "$_id",
-        name: "$userInfo.name",
-        tokens: 1
-      }
-    }
-  ]);
+  // 2) Build leaderboard array
+  const leaderboard = topUsers.map((u, idx) => ({
+    rank: idx + 1,
+    userId: u._id,
+    name: u.name,
+    tokens: u.tokens,
+    profilePic: u.profilePic.url
+  }));
 
-  // 3. Compute current user's tokens in last week
-  const yourTokensResult = await Post.aggregate([
-    { $match: { type: "popular", createdAt: { $gte: weekAgo }, owner: req.user._id } },
-    { $group: { _id: null, tokens: { $sum: "$tokensAwarded" } } }
-  ]);
-  const yourTokens = yourTokensResult[0]?.tokens || 0;
+  // 3) Get current user's total tokens
+  const me = await User.findById(req.user._id).select("tokens");
+  const yourTokens = me?.tokens || 0;
 
-  // 4. Send response
+  // 4) Respond
   res.json({ leaderboard, yourTokens });
 });
