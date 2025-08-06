@@ -5,12 +5,12 @@ export const isAuth = async (req, res, next) => {
   try {
     let token;
 
-    // ✅ First try to get from cookies
+    //  First try to get from cookies
     if (req.cookies?.token) {
       token = req.cookies.token;
     }
 
-    // ✅ If not in cookie, try Authorization header
+    //  If not in cookie, try Authorization header
     else if (req.headers.authorization && req.headers.authorization.startsWith("Bearer")) {
       token = req.headers.authorization.split(" ")[1];
     }

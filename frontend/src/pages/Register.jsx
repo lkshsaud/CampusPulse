@@ -6,16 +6,16 @@ import { FaEye, FaEyeSlash } from "react-icons/fa";
 
 const testimonials = [
   {
-    name: "Casey Bachmeyer",
-    title: "Founder, Sisyphus Ventures",
+    name: "Rakesh Sharma",
+    title: "Bachelor Student",
     image: "/testimonial1.png",
-    text: `This analytics platform is a game-changer! It's easy to use, provides valuable insights, and has helped me make smarter business decisions. I highly recommend it.`,
+    text: `This platform is very helpful for university students. it has helped me in alot of scenarios. `,
   },
   {
-    name: "Lisa Carter",
-    title: "CTO, FintechRise",
+    name: "Lisa Johnson",
+    title: "Master's Student",
     image: "/testimonial1.png",
-    text: `Brilliant platform. It's saved us time and provided better decision-making for the entire team.`,
+    text: `Once i lost my important certificate and this platform helped me to get it back.`,
   },
 ];
 
@@ -72,9 +72,9 @@ const Register = () => {
             {/* Left Side */}
             <div className="md:w-1/2 bg-[#1c1c1c] text-white flex flex-col items-center justify-center p-8">
               <div className="text-center">
-                <h2 className="text-3xl font-bold">Manage your Money Anywhere</h2>
+                <h2 className="text-3xl font-bold">Engage with the University circle</h2>
                 <p className="text-gray-400 text-sm mt-2">
-                  View all the analytics and grow your business from anywhere!
+                  Get connected with the students around your university and manage your accessories
                 </p>
               </div>
 
