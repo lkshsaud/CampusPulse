@@ -16,11 +16,7 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
-/**
- * POST /api/reports
- * Create a lost or found report.
- * If category==="found", award 10 tokens to the reporter immediately.
- */
+
 router.post(
   "/",
   isAuth,

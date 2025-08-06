@@ -21,12 +21,10 @@ const userSchema = new mongoose.Schema(
       enum: ["male", "female"],
     },
 
-    // ─── NEW FIELD ──────────────────────────────────────────
     tokens: {
       type: Number,
-      default: 0,          // total tokens earned via Popular Opinion likes
+      default: 0,          
     },
-    // ────────────────────────────────────────────────────────
 
     followers: [
       {
