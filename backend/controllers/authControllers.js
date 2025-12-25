@@ -43,7 +43,7 @@ export const registerUser = async (req, res) => {
   res.status(201).json({
     message: "User Registered",
     user,
-    token, // <-- include token in response
+    token, //  include token in response
   });
 };
 
@@ -70,7 +70,7 @@ export const loginUser = TryCatch(async (req, res) => {
   res.json({
     message: "User Logged in",
     user,
-    token, // <-- include token in response
+    token, // include token in response
   });
 });
 

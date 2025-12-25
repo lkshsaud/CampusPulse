@@ -11,7 +11,7 @@ const generateToken = (id, res) => {
     sameSite: "strict",
   });
 
-  return token; // <== return token so controller can send it in JSON
+  return token; //  return token so controller can send it in JSON
 };
 
 export default generateToken;

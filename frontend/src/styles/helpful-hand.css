@@ -2,7 +2,7 @@
 .hh-wrapper {
   height: 100%;
   display: flex;
-  flex-direction: column;
+  flex-direction: column;;
 }
 
 /* toast popup */
@@ -46,7 +46,7 @@
 }
 .hh-aside {
   flex: 2;
-  background: #fff;
+  background: #1c1515;
   margin: 0.5rem;
   padding: 1rem;
   overflow-y: auto;
@@ -68,7 +68,7 @@
   width: 100%;
   padding: 0.5rem;
   margin-top: 0.25rem;
-  border: 1px solid #bbb;
+  border: 1px solid #0b0b0b;
   border-radius: 4px;
   box-sizing: border-box;
 }

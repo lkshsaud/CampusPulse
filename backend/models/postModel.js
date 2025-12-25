@@ -18,7 +18,6 @@ const postSchema = new mongoose.Schema({
     ref: "User",
   },
 
-  // ─── NEW FIELDS ────────────────────────────────────────
   anonymousOrder: {
     type: Number,
     default: null,            // will hold 1,2,3… for “popular” posts
@@ -27,7 +26,6 @@ const postSchema = new mongoose.Schema({
     type: Number,
     default: 0,               // counts likes given on a “popular” post
   },
-  // ────────────────────────────────────────────────────────
 
   createdAt: {
     type: Date,
