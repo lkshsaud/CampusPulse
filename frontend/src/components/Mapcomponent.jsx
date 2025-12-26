@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
@@ -12,13 +12,16 @@ const MapComponent = ({
   radius = 500,
   onRadiusChange,
   showRemoveButton = false,
-  onRemoveLocation
+  onRemoveLocation,
+  selectedReportId = null // Add this to highlight selected report
 }) => {
   const mapRef = useRef(null);
   const leafletMapRef = useRef(null);
   const markersRef = useRef([]);
   const selectedMarkerRef = useRef(null);
   const polygonRef = useRef(null);
+  const circleRef = useRef(null);
+  const [activePopup, setActivePopup] = useState(null);
 
   // KU Campus polygon
   const KU_POLYGON = [
@@ -27,9 +30,38 @@ const MapComponent = ({
     [27.6190, 85.5350], [27.6165, 85.5365]
   ];
 
+  // Custom icons
+  const createMarkerIcon = (color, size = 30, letter) => {
+    return L.divIcon({
+      html: `
+        <div style="
+          width: ${size}px;
+          height: ${size}px;
+          background-color: ${color};
+          border: 2px solid white;
+          border-radius: 50%;
+          box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: white;
+          font-weight: bold;
+          font-size: 12px;
+          cursor: pointer;
+          transition: all 0.2s;
+        ">
+          ${letter}
+        </div>
+      `,
+      className: "custom-div-icon",
+      iconSize: [size, size],
+      iconAnchor: [size/2, size]
+    });
+  };
+
   // Initialize map
   useEffect(() => {
-    if (!leafletMapRef.current) {
+    if (!leafletMapRef.current && mapRef.current) {
       const map = L.map(mapRef.current).setView(center, zoom);
       
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
@@ -48,10 +80,18 @@ const MapComponent = ({
       
       leafletMapRef.current = map;
       
-      // Add click handler
+      // Add click handler for location selection
       map.on("click", (e) => {
         if (polygonRef.current.getBounds().contains(e.latlng)) {
-          if (onLocationSelect) onLocationSelect(e.latlng);
+          if (onLocationSelect) {
+            onLocationSelect(e.latlng);
+          }
+        } else {
+          // Show alert if outside campus
+          L.popup()
+            .setLatLng(e.latlng)
+            .setContent("Please select a location within KU Campus")
+            .openOn(map);
         }
       });
     }
@@ -63,6 +103,24 @@ const MapComponent = ({
       }
     };
   }, []);
+
+  // Update radius circle
+  useEffect(() => {
+    if (!leafletMapRef.current || !selectedLocation) return;
+    
+    // Remove previous circle
+    if (circleRef.current) {
+      leafletMapRef.current.removeLayer(circleRef.current);
+    }
+    
+    // Add new circle
+    circleRef.current = L.circle(selectedLocation, {
+      color: '#3b82f6',
+      fillColor: '#3b82f6',
+      fillOpacity: 0.1,
+      radius: radius
+    }).addTo(leafletMapRef.current);
+  }, [selectedLocation, radius]);
 
   // Update markers
   useEffect(() => {
@@ -78,67 +136,98 @@ const MapComponent = ({
     markers.forEach(report => {
       if (report.status === "claimed") return;
       
-      const iconColor = report.category === "lost" ? "#ef4444" : "#10b981";
+      const isSelected = selectedReportId === report._id;
+      const iconColor = isSelected ? "#f59e0b" : (report.category === "lost" ? "#ef4444" : "#10b981");
+      const iconSize = isSelected ? 40 : 30;
+      const iconLetter = isSelected ? "📍" : (report.category === "lost" ? "L" : "F");
       
-      const icon = L.divIcon({
-        html: `
-          <div style="
-            width: 30px;
-            height: 30px;
-            background-color: ${iconColor};
-            border: 2px solid white;
-            border-radius: 50%;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: bold;
-            font-size: 12px;
-          ">
-            ${report.category === "lost" ? "L" : "F"}
+      const icon = createMarkerIcon(iconColor, iconSize, iconLetter);
+      
+      // Create popup content
+      const popupContent = `
+        <div class="map-popup">
+          <h4><strong>${report.itemName}</strong> 
+            <span class="popup-category ${report.category}">(${report.category})</span>
+          </h4>
+          <p class="popup-desc">${report.description?.substring(0, 100) || "No description"}...</p>
+          ${report.imageUrl ? `
+            <img src="${report.imageUrl}" alt="${report.itemName}" 
+              class="popup-img" 
+              style="max-width: 150px; max-height: 100px; border-radius: 4px; margin: 5px 0; object-fit: cover;">
+          ` : ""}
+          <div class="popup-details">
+            <p><span class="label">📍 Location:</span> 
+              ${report.lat?.toFixed(4)}, ${report.lng?.toFixed(4)}
+            </p>
+            ${report.contact ? `
+              <p><span class="label">📞 Contact:</span> ${report.contact}</p>
+            ` : ""}
+            ${report.similarity !== undefined ? `
+              <p><span class="label">📊 Similarity:</span> ${Math.round(report.similarity * 100)}%</p>
+            ` : ""}
           </div>
-        `,
-        className: "custom-div-icon",
-        iconSize: [30, 30],
-        iconAnchor: [15, 30]
-      });
+          <button class="popup-action-btn" data-report-id="${report._id}">
+            View Details
+          </button>
+        </div>
+      `;
       
       const marker = L.marker([report.lat, report.lng], { icon })
         .addTo(leafletMapRef.current)
-        .bindPopup(`
-          <div class="map-popup">
-            <h4><strong>${report.itemName}</strong> 
-              <span class="popup-category ${report.category}">(${report.category})</span>
-            </h4>
-            <p class="popup-desc">${report.description || "No description"}</p>
-            ${report.imageUrl ? `
-              <img src="${report.imageUrl}" alt="${report.itemName}" 
-                class="popup-img" 
-                style="max-width: 150px; border-radius: 4px; margin: 5px 0;">
-            ` : ""}
-            <div class="popup-details">
-              <p><span class="label">📍 Location:</span> 
-                ${report.lat?.toFixed(4)}, ${report.lng?.toFixed(4)}
-              </p>
-              ${report.contact ? `
-                <p><span class="label">📞 Contact:</span> ${report.contact}</p>
-              ` : ""}
-            </div>
-            <button onclick="window.handleMarkerClick('${report._id}')" 
-              class="popup-action-btn">
-              Find Similar Items
-            </button>
-          </div>
-        `);
+        .bindPopup(popupContent);
       
-      marker.on("click", () => {
-        if (onMarkerClick) onMarkerClick(report);
+      // Handle marker click
+      marker.on("click", (e) => {
+        // Prevent immediate closing of popup
+        e.originalEvent.preventDefault();
+        e.originalEvent.stopPropagation();
+        
+        // Open popup
+        marker.openPopup();
+        
+        // Call the onMarkerClick callback
+        if (onMarkerClick) {
+          onMarkerClick(report);
+        }
+      });
+      
+      // Handle popup open
+      marker.on("popupopen", () => {
+        setActivePopup(report._id);
+        
+        // Add event listener to the popup button
+        setTimeout(() => {
+          const popupBtn = document.querySelector(`button[data-report-id="${report._id}"]`);
+          if (popupBtn) {
+            popupBtn.addEventListener("click", (e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              if (onMarkerClick) {
+                onMarkerClick(report);
+                marker.closePopup();
+              }
+            });
+          }
+        }, 100);
+      });
+      
+      // Handle popup close
+      marker.on("popupclose", () => {
+        if (activePopup === report._id) {
+          setActivePopup(null);
+        }
       });
       
       markersRef.current.push(marker);
+      
+      // Open popup if this is the selected report
+      if (isSelected) {
+        setTimeout(() => {
+          marker.openPopup();
+        }, 500);
+      }
     });
-  }, [markers, onMarkerClick]);
+  }, [markers, onMarkerClick, selectedReportId, activePopup]);
 
   // Update selected location marker
   useEffect(() => {
@@ -147,43 +236,50 @@ const MapComponent = ({
     // Clear previous selected marker
     if (selectedMarkerRef.current) {
       leafletMapRef.current.removeLayer(selectedMarkerRef.current);
+      selectedMarkerRef.current = null;
     }
     
     if (selectedLocation) {
+      const selectedIcon = createMarkerIcon("#f59e0b", 40, "📍");
       selectedMarkerRef.current = L.marker(selectedLocation, {
-        icon: L.divIcon({
-          html: `
-            <div style="
-              width: 40px;
-              height: 40px;
-              background-color: #f59e0b;
-              border: 3px solid white;
-              border-radius: 50%;
-              box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              color: white;
-              font-weight: bold;
-              font-size: 20px;
-            ">
-              📍
-            </div>
-          `,
-          className: "custom-div-icon",
-          iconSize: [40, 40],
-          iconAnchor: [20, 40]
-        })
+        icon: selectedIcon,
+        zIndexOffset: 1000
       }).addTo(leafletMapRef.current);
       
       selectedMarkerRef.current.bindPopup(`
         <div class="selected-location-popup">
           <strong>Selected Location</strong><br>
-          ${selectedLocation.lat.toFixed(6)}, ${selectedLocation.lng.toFixed(6)}
+          ${selectedLocation.lat.toFixed(6)}, ${selectedLocation.lng.toFixed(6)}<br>
+          <small>Radius: ${radius}m</small>
         </div>
       `).openPopup();
+      
+      // Center map on selected location
+      leafletMapRef.current.setView(selectedLocation, 18);
     }
-  }, [selectedLocation]);
+  }, [selectedLocation, radius]);
+
+  // Fit bounds to show all markers
+  useEffect(() => {
+    if (!leafletMapRef.current || markers.length === 0) return;
+    
+    const bounds = L.latLngBounds(markers.map(m => [m.lat, m.lng]));
+    if (selectedLocation) {
+      bounds.extend(selectedLocation);
+    }
+    
+    leafletMapRef.current.fitBounds(bounds, { padding: [50, 50] });
+  }, [markers, selectedLocation]);
+
+  const handleRemoveLocation = useCallback(() => {
+    if (onRemoveLocation) {
+      onRemoveLocation();
+    }
+    if (circleRef.current) {
+      leafletMapRef.current?.removeLayer(circleRef.current);
+      circleRef.current = null;
+    }
+  }, [onRemoveLocation]);
 
   return (
     <div className="map-container">
@@ -197,6 +293,7 @@ const MapComponent = ({
             step="100"
             value={radius}
             onChange={(e) => onRadiusChange && onRadiusChange(parseInt(e.target.value))}
+            className="radius-slider"
           />
           <div className="radius-hint">
             <small>Adjusts how far to search for matches</small>
@@ -206,7 +303,7 @@ const MapComponent = ({
         {showRemoveButton && selectedLocation && (
           <button 
             className="remove-marker-btn"
-            onClick={onRemoveLocation}
+            onClick={handleRemoveLocation}
             title="Remove selected location"
           >
             🗑️ Clear Location
@@ -214,15 +311,16 @@ const MapComponent = ({
         )}
         
         <div className="map-legend">
-          <span className="legend-item lost">● Lost</span>
-          <span className="legend-item found">● Found</span>
-          <span className="legend-item selected">📍 Selected</span>
+          <span className="legend-item"><div className="legend-dot lost"></div> Lost</span>
+          <span className="legend-item"><div className="legend-dot found"></div> Found</span>
+          <span className="legend-item"><div className="legend-dot selected"></div> Selected</span>
         </div>
       </div>
       <div ref={mapRef} className="leaflet-map" />
       <div className="map-instructions">
-        <p>📌 Click on map to select location for your report</p>
-        <p>🖱️ Click on any marker to find similar items</p>
+        <p>📌 Click on map within KU Campus to select location for your report</p>
+        <p>🖱️ Click on any marker to view report details</p>
+        <p>🎯 Blue circle shows your search radius</p>
       </div>
     </div>
   );

@@ -138,17 +138,43 @@ body {
   gap: 1rem;
   font-size: 0.8rem;
   flex-wrap: wrap;
+  align-items: center;
 }
 
 .legend-item {
   display: flex;
   align-items: center;
-  gap: 0.25rem;
+  gap: 0.5rem;
+  padding: 4px 8px;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 4px;
+  border: 1px solid #e2e8f0;
+}
+.legend-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid white;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
 }
 
-.legend-item.lost { color: #ef4444; }
-.legend-item.found { color: #10b981; }
-.legend-item.selected { color: #f59e0b; }
+.legend-dot.lost {
+  background-color: #ef4444;
+}
+
+.legend-dot.found {
+  background-color: #10b981;
+}
+
+.legend-dot.selected {
+  background-color: #f59e0b;
+}
+
+.legend-item span {
+  color: #475569;
+  font-weight: 500;
+  font-size: 0.85rem;
+}
 
 .leaflet-map {
   height: 400px;
